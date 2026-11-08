@@ -143,9 +143,10 @@ textarea{height:140px;resize:vertical}
       <div>
         <div class="lbl">SPEED</div>
         <div class="seg" id="segSpeed">
-          <button data-v="0.5">50%</button>
           <button data-v="0.75">75%</button>
           <button data-v="1">100%</button>
+          <button data-v="1.15">115%</button>
+          <button data-v="1.3">130%</button>
         </div>
       </div>
     </div>
@@ -244,7 +245,8 @@ const store={
   get(k,d){try{const v=localStorage.getItem("pb_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
   set(k,v){try{localStorage.setItem("pb_"+k,JSON.stringify(v))}catch(e){}}
 };
-const S=Object.assign({view:"both",mode:"wait",speed:0.75,ch:2,base:36,label:"jp",look:2.0,metOn:0,offset:0},store.get("settings",{}));
+const S=Object.assign({view:"both",mode:"wait",speed:1,ch:2,base:36,label:"jp",look:2.0,metOn:0,offset:0},store.get("settings",{}));
+if(![0.75,1,1.15,1.3].includes(S.speed))S.speed=1;
 const saveS=()=>store.set("settings",S);
 
 /* ================= NOTES ================= */
@@ -276,12 +278,12 @@ function parseSong(txt){
 
 /* ================= SONGS ================= */
 const BUILTIN=[
- {id:"b1",lv:1,title:"ドとソ",bpm:72,glow:"rgba(62,230,255,.3)",src:"ド:2 ソ:2 ド:2 ソ:2 | ド:2 ソ:2 ド:2 ソ:2 | ド:2 ソ:2 ド:2 ソ:2 | ド:4"},
- {id:"b2",lv:1,title:"のぼって くだって",bpm:80,glow:"rgba(93,255,168,.25)",src:"ド レ ミ ファ ソ:2 -:2 | ソ ファ ミ レ ド:2 -:2 | ド レ ミ ファ ソ ラ シ ド^:5"},
- {id:"b3",lv:2,title:"かえるのうた",bpm:80,glow:"rgba(93,255,168,.25)",src:"ド レ ミ ファ ミ レ ド:2 | ミ ファ ソ ラ ソ ファ ミ:2 | ド:2 ド:2 ド:2 ド:2 | ド:0.5 ド:0.5 レ:0.5 レ:0.5 ミ:0.5 ミ:0.5 ファ:0.5 ファ:0.5 ミ レ ド:2"},
+ {id:"b1",lv:1,title:"ドとソ",bpm:92,glow:"rgba(62,230,255,.3)",src:"ド:2 ソ:2 ド:2 ソ:2 | ド:2 ソ:2 ド:2 ソ:2 | ド:2 ソ:2 ド:2 ソ:2 | ド:4"},
+ {id:"b2",lv:1,title:"のぼって くだって",bpm:96,glow:"rgba(93,255,168,.25)",src:"ド レ ミ ファ ソ:2 -:2 | ソ ファ ミ レ ド:2 -:2 | ド レ ミ ファ ソ ラ シ ド^:5"},
+ {id:"b3",lv:2,title:"かえるのうた",bpm:96,glow:"rgba(93,255,168,.25)",src:"ド レ ミ ファ ミ レ ド:2 | ミ ファ ソ ラ ソ ファ ミ:2 | ド:2 ド:2 ド:2 ド:2 | ド:0.5 ド:0.5 レ:0.5 レ:0.5 ミ:0.5 ミ:0.5 ファ:0.5 ファ:0.5 ミ レ ド:2"},
  {id:"b4",lv:2,title:"きらきらぼし（ベース）",bpm:88,glow:"rgba(255,210,94,.25)",src:"ド:2 ド:2 ファ:2 ド:2 | ファ:2 ド:2 ソ:2 ド:2 | ド:2 ファ:2 ド:2 ソ:2 | ド:2 ファ:2 ド:2 ソ:2 | ド:2 ド:2 ファ:2 ド:2 | ファ:2 ド:2 ソ:2 ド:4"},
  {id:"b5",lv:3,title:"オクターブ・ジャンプ",bpm:84,glow:"rgba(155,140,255,.3)",src:"ド:2 ド^:2 ファ:2 ファ:2 | ソ:2 ソ:2 ド:4 | ド:2 ド^:2 ファ:2 ラ:2 | ソ:2 ソ^:2 ド:4"},
- {id:"b6",lv:3,title:"くろいペダル",bpm:72,glow:"rgba(255,79,216,.3)",src:"ド ド# レ レ# ミ ファ ファ# ソ ソ# ラ ラ# シ ド^:2 -:2 | ド^ シ ラ# ラ ソ# ソ ファ# ファ ミ レ# レ ド# ド:4"},
+ {id:"b6",lv:3,title:"くろいペダル",bpm:88,glow:"rgba(255,79,216,.3)",src:"ド ド# レ レ# ミ ファ ファ# ソ ソ# ラ ラ# シ ド^:2 -:2 | ド^ シ ラ# ラ ソ# ソ ファ# ファ ミ レ# レ ド# ド:4"},
  {id:"b7",lv:4,title:"ウォーキング・ベース",bpm:96,glow:"rgba(62,230,255,.3)",src:"ド ミ ソ ラ | ファ ラ ド^ ラ | ソ シ レ^ シ | ド:2 ソ:2 | ド ミ ソ ラ | ファ ラ ド^ ラ | ソ ファ ミ レ | ド:4"},
  {id:"b8",lv:5,title:"ブルース・ベース",bpm:100,glow:"rgba(255,79,216,.3)",src:"ド ミ ソ ラ シb ラ ソ ミ | ファ ラ ド^ レ^ ミb^ レ^ ド^ ラ | ド ミ ソ ラ シb ラ ソ ミ | ソ ファ ミ レ ド:4"}
 ];
@@ -386,7 +388,10 @@ let G=null; // game
 const pressed=new Array(N_PEDALS).fill(false);
 const laneFlash=new Float32Array(N_PEDALS),wrongFlash=new Float32Array(N_PEDALS);
 let parts=[],rings=[];
-const WIN={p:0.07,g:0.13,o:0.20};
+// judgement windows are a fraction of one beat (same strictness at any tempo), clamped to sane limits in seconds
+const WIN_RATIO={p:0.10,g:0.18,o:0.27},WIN_MIN={p:0.045,g:0.085,o:0.13},WIN_MAX={p:0.10,g:0.18,o:0.28};
+let WIN={p:0.07,g:0.13,o:0.20};
+function setWin(spb){for(const k of ["p","g","o"])WIN[k]=Math.min(WIN_MAX[k],Math.max(WIN_MIN[k],spb*WIN_RATIO[k]))}
 const PTS={PERFECT:100,GREAT:70,GOOD:40,OK:20,MISS:0};
 
 function layout(){
@@ -421,7 +426,7 @@ window.addEventListener("resize",()=>{if($("play").classList.contains("on"))layo
 function startSong(song){
   let parsed;try{parsed=parseSong(song.src)}catch(e){return}
   ensureAudio();
-  const spb=60/(song.bpm*S.speed);
+  const spb=60/(song.bpm*S.speed);setWin(spb);
   const notes=parsed.notes.map(n=>({idx:n.idx,t:n.beat*spb,d:n.dur*spb,res:null,b:n.beat,db:n.dur,s:n.s,acc:n.acc}));
   G={song,notes,rests:parsed.rests,beats:parsed.beats,spb,lead:4,time:-4*spb,last:performance.now(),endT:parsed.beats*spb+1.2,
      next:0,score:0,combo:0,max:0,cnt:{PERFECT:0,GREAT:0,GOOD:0,OK:0,MISS:0},wrong:0,
