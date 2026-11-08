@@ -61,6 +61,9 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .hud .r{text-align:right}
 .score{font-family:Orbitron;font-size:26px;font-weight:800}
 .small{font-size:12px;color:var(--sub);letter-spacing:.15em}
+.pbtn.met{width:auto;padding:0 14px;margin-left:8px;font-size:14px;font-weight:700;color:var(--sub);vertical-align:top}
+.pbtn.met.on{color:var(--txt);border-color:var(--cyan);box-shadow:0 0 14px rgba(62,230,255,.35)}
+.pbtn.met.on b{color:var(--cyan)}
 .pbtn{pointer-events:auto;width:46px;height:46px;border-radius:14px;background:rgba(14,19,34,.8);border:1px solid var(--line);font-size:18px;font-weight:900}
 .prog{position:absolute;left:0;top:0;height:3px;background:linear-gradient(90deg,var(--cyan),var(--mag));box-shadow:0 0 12px var(--cyan);width:0}
 #judge{position:absolute;left:50%;transform:translateX(-50%);font-family:Orbitron;font-weight:800;font-size:40px;letter-spacing:.08em;pointer-events:none;opacity:0;white-space:nowrap}
@@ -156,7 +159,7 @@ textarea{height:140px;resize:vertical}
   <canvas id="cv"></canvas>
   <div class="prog" id="prog"></div>
   <div class="hud">
-    <div class="l"><button class="pbtn" id="btnPause">Ⅱ</button></div>
+    <div class="l"><button class="pbtn" id="btnPause">Ⅱ</button><button class="pbtn met" id="btnMet">♩ メトロノーム <b id="metState">OFF</b></button></div>
     <div class="r"><div class="small">SCORE</div><div class="score num" id="score">0</div></div>
   </div>
   <div id="combo"><div class="n" id="comboN"></div><div class="t" id="comboT"></div></div>
@@ -203,8 +206,8 @@ textarea{height:140px;resize:vertical}
     <div class="seg" id="segLabel"><button data-v="jp">ドレミ</button><button data-v="en">CDE</button><button data-v="none">なし</button></div></div>
   <div class="row"><div>ノーツのはやさ</div>
     <div class="seg" id="segScroll"><button data-v="2.6">1</button><button data-v="2.0">2</button><button data-v="1.6">3</button><button data-v="1.25">4</button></div></div>
-  <div class="row"><div>メトロノーム<br><small style="color:var(--sub)">iPhoneは マナーモードだと音が出ません</small></div>
-    <div class="seg" id="segMet"><button data-v="count">カウントだけ</button><button data-v="all">ずっと</button><button data-v="off">なし</button></div></div>
+  <div class="row"><div>メトロノーム<br><small style="color:var(--sub)">さいしょの1しょうせつは いつも鳴ります。<br>iPhoneは マナーモードだと音が出ません</small></div>
+    <div class="seg" id="segMet"><button data-v="1">ずっと鳴らす</button><button data-v="0">さいしょだけ</button></div></div>
   <div class="row"><div>タイミングちょうせい<br><small style="color:var(--sub)" id="offTxt">0 ms</small></div>
     <input type="range" id="offR" min="-150" max="150" step="5" value="0"></div>
   <div class="lbl" style="margin-top:12px">MIDI MONITOR</div>
@@ -241,7 +244,7 @@ const store={
   get(k,d){try{const v=localStorage.getItem("pb_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
   set(k,v){try{localStorage.setItem("pb_"+k,JSON.stringify(v))}catch(e){}}
 };
-const S=Object.assign({view:"both",mode:"wait",speed:0.75,ch:2,base:36,label:"jp",look:2.0,met:"count",offset:0},store.get("settings",{}));
+const S=Object.assign({view:"both",mode:"wait",speed:0.75,ch:2,base:36,label:"jp",look:2.0,metOn:0,offset:0},store.get("settings",{}));
 const saveS=()=>store.set("settings",S);
 
 /* ================= NOTES ================= */
@@ -296,7 +299,7 @@ function bindSeg(id,key,cb){
 }
 bindSeg("segMode","mode",renderMenu);
 bindSeg("segSpeed","speed",renderMenu);bindSeg("segView","view",renderMenu);
-bindSeg("segCh","ch");bindSeg("segLabel","label");bindSeg("segScroll","look");bindSeg("segMet","met");
+bindSeg("segCh","ch");bindSeg("segLabel","label");bindSeg("segScroll","look");bindSeg("segMet","metOn",paintMet);
 $("offR").value=S.offset;$("offTxt").textContent=S.offset+" ms";
 $("offR").oninput=e=>{S.offset=+e.target.value;$("offTxt").textContent=S.offset+" ms";saveS()};
 
@@ -498,14 +501,14 @@ function loop(now){
     }
     G.time=nt;
     // metronome
-    if(actx&&S.met!=="off"){
+    // count-in (1 bar) always clicks; clicks during the song follow the ON/OFF button
+    if(actx){
       while(true){
         const bt=G.nextBeat*G.spb;
-        if(bt>G.time+0.12)break;
-        const allow=G.nextBeat<0||(S.met==="all"&&S.mode==="rhythm");
+        if(bt>G.time+0.12||bt>G.endT)break;
+        const allow=G.nextBeat<0||S.metOn===1;
         if(allow&&bt>=G.time-0.02)click(actx.currentTime+Math.max(0,bt-G.time),G.nextBeat<0?G.nextBeat===-4:G.nextBeat%4===0);
         G.nextBeat++;
-        if(G.nextBeat>=0&&!(S.met==="all"&&S.mode==="rhythm")){G.nextBeat=1e9;break}
       }
     }
     // misses
@@ -794,6 +797,9 @@ window.addEventListener("keyup",e=>{const i=KEYS.indexOf(e.key.toLowerCase());if
 /* ================= PAUSE / RESULT ================= */
 function togglePause(){if(!G||G.ended)return;G.paused=!G.paused;$("ovPause").classList.toggle("on",G.paused);G.last=performance.now()}
 $("btnPause").onclick=()=>{ensureAudio();togglePause()};
+function paintMet(){const on=S.metOn===1;$("btnMet").classList.toggle("on",on);$("metState").textContent=on?"ON":"OFF";
+  [...$("segMet").children].forEach(b=>b.classList.toggle("on",String(S.metOn)===b.dataset.v))}
+$("btnMet").onclick=()=>{ensureAudio();S.metOn=S.metOn===1?0:1;saveS();paintMet()};
 $("pResume").onclick=togglePause;
 $("pRetry").onclick=()=>startSong(G.song);
 $("pQuit").onclick=()=>goMenu();
@@ -832,7 +838,7 @@ $("eSave").onclick=()=>{
   $("eTitle").value="";$("eNotes").value="";$("ovEdit").classList.remove("on");renderMenu();
 };
 
-renderMenu();initMIDI();
+renderMenu();initMIDI();paintMet();
 })();
 </script>
 </body>
