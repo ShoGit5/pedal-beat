@@ -389,10 +389,14 @@ const pressed=new Array(N_PEDALS).fill(false);
 const laneFlash=new Float32Array(N_PEDALS),wrongFlash=new Float32Array(N_PEDALS);
 let parts=[],rings=[];
 // judgement windows are a fraction of one beat (same strictness at any tempo), clamped to sane limits in seconds
-const WIN_RATIO={p:0.10,g:0.18,o:0.27},WIN_MIN={p:0.045,g:0.085,o:0.13},WIN_MAX={p:0.10,g:0.18,o:0.28};
+// per mode: "rhythm" = チャレンジ (strict), "wait" = れんしゅう (lenient)
+const JUDGE={
+  rhythm:{ratio:{p:0.10,g:0.18,o:0.27},min:{p:0.045,g:0.085,o:0.13},max:{p:0.10,g:0.18,o:0.28},pts:{PERFECT:100,GREAT:70,GOOD:40,OK:20,MISS:0}},
+  wait:  {ratio:{p:0.15,g:0.28,o:0.45},min:{p:0.06,g:0.11,o:0.18},max:{p:0.15,g:0.25,o:0.40},pts:{PERFECT:100,GREAT:85,GOOD:70,OK:50,MISS:0}}
+};
 let WIN={p:0.07,g:0.13,o:0.20};
-function setWin(spb){for(const k of ["p","g","o"])WIN[k]=Math.min(WIN_MAX[k],Math.max(WIN_MIN[k],spb*WIN_RATIO[k]))}
-const PTS={PERFECT:100,GREAT:70,GOOD:40,OK:20,MISS:0};
+function setWin(spb){const J=JUDGE[S.mode]||JUDGE.rhythm;for(const k of ["p","g","o"])WIN[k]=Math.min(J.max[k],Math.max(J.min[k],spb*J.ratio[k]))}
+const pts=j=>(JUDGE[S.mode]||JUDGE.rhythm).pts[j];
 
 function layout(){
   DPR=Math.min(window.devicePixelRatio||1,2);
@@ -471,7 +475,7 @@ function advanceNext(){while(G.next<G.notes.length&&G.notes[G.next].res)G.next++
 
 const JCOL={PERFECT:"#3ee6ff",GREAT:"#9b8cff",GOOD:"#5dffa8",OK:"#ffd25e",MISS:"#ff5a6e"};
 function hit(n,j){
-  n.res=j;G.cnt[j]++;G.score+=PTS[j]+Math.min(G.combo,50);G.combo++;G.max=Math.max(G.max,G.combo);
+  n.res=j;G.cnt[j]++;G.score+=pts(j)+Math.min(G.combo,50);G.combo++;G.max=Math.max(G.max,G.combo);
   showJudge(j);setCombo(true);
   const L=lanes[n.idx],col=JCOL[j];
   for(let i=0;i<(j==="PERFECT"?22:14);i++){
@@ -814,7 +818,7 @@ function goMenu(){G=null;["ovPause","ovResult"].forEach(i=>$(i).classList.remove
 
 function finish(){
   G.ended=true;
-  const n=G.notes.length,acc=G.notes.reduce((a,x)=>a+PTS[x.res||"MISS"],0)/(100*n);
+  const n=G.notes.length,acc=G.notes.reduce((a,x)=>a+pts(x.res||"MISS"),0)/(100*n);
   const stars=acc>=0.88?3:acc>=0.7?2:acc>=0.5?1:0;
   const best=store.get("best",{}),k=bestKey(G.song.id),old=best[k]||{stars:0,score:0};
   const isNew=G.score>old.score;
