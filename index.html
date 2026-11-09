@@ -51,6 +51,8 @@ button{font:inherit;color:inherit;border:0;background:none;cursor:pointer}
 .card .meta{font-size:12px;color:var(--sub)}
 .card .stars{margin-top:12px;font-size:20px;letter-spacing:2px;color:#2b3350}
 .card .stars b{color:var(--gold);text-shadow:0 0 10px rgba(255,210,94,.6);font-weight:400}
+.card .listen{position:absolute;right:12px;bottom:12px;z-index:2;font-size:13px;font-weight:700;padding:7px 12px;border-radius:10px;background:rgba(62,230,255,.12);border:1px solid rgba(62,230,255,.4);color:var(--txt)}
+#demoTag{position:absolute;left:50%;top:16px;transform:translateX(-50%);padding:8px 16px;border-radius:999px;background:rgba(62,230,255,.15);border:1px solid rgba(62,230,255,.5);font-weight:900;font-size:14px;letter-spacing:.1em;display:none;pointer-events:none}
 .card .del{position:absolute;top:10px;right:10px;font-size:12px;color:var(--sub);padding:4px 8px;border-radius:8px;background:rgba(255,255,255,.04);z-index:2}
 
 /* ---------- PLAY ---------- */
@@ -165,6 +167,7 @@ textarea{height:140px;resize:vertical}
   </div>
   <div id="combo"><div class="n" id="comboN"></div><div class="t" id="comboT"></div></div>
   <div id="judge"></div>
+  <div id="demoTag">♪ おてほん（きくだけ）</div>
   <div id="waitmsg">ひかっているペダルを ふもう</div>
   <div id="banner"></div>
 </section>
@@ -196,6 +199,14 @@ textarea{height:140px;resize:vertical}
   <button class="big" id="rBack">きょくをえらぶ</button>
 </div></div>
 
+<!-- ============ DEMO END ============ -->
+<div class="ov" id="ovDemo"><div class="box">
+  <h2>どんなメロディか わかったかな？</h2>
+  <button class="big pri" id="dPlay">れんしゅうする</button>
+  <button class="big" id="dAgain">もういちど きく</button>
+  <button class="big" id="dBack">きょくをえらぶ</button>
+</div></div>
+
 <!-- ============ SETTINGS ============ -->
 <div class="ov" id="ovSet"><div class="box">
   <h2>せってい</h2>
@@ -207,6 +218,8 @@ textarea{height:140px;resize:vertical}
     <div class="seg" id="segLabel"><button data-v="jp">ドレミ</button><button data-v="en">CDE</button><button data-v="none">なし</button></div></div>
   <div class="row"><div>ノーツのはやさ</div>
     <div class="seg" id="segScroll"><button data-v="2.6">1</button><button data-v="2.0">2</button><button data-v="1.6">3</button><button data-v="1.25">4</button></div></div>
+  <div class="row"><div>おてほんの音<br><small style="color:var(--sub)">エレクトーン：MIDIでつないでいるとき、エレクトーンのペダルの音色で鳴ります</small></div>
+    <div class="seg" id="segDemo"><button data-v="pc">この画面</button><button data-v="el">エレクトーン</button></div></div>
   <div class="row"><div>メトロノーム<br><small style="color:var(--sub)">さいしょの1しょうせつは いつも鳴ります。<br>iPhoneは マナーモードだと音が出ません</small></div>
     <div class="seg" id="segMet"><button data-v="1">ずっと鳴らす</button><button data-v="0">さいしょだけ</button></div></div>
   <div class="row"><div>タイミングちょうせい<br><small style="color:var(--sub)" id="offTxt">0 ms</small></div>
@@ -245,7 +258,7 @@ const store={
   get(k,d){try{const v=localStorage.getItem("pb_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},
   set(k,v){try{localStorage.setItem("pb_"+k,JSON.stringify(v))}catch(e){}}
 };
-const S=Object.assign({view:"both",mode:"wait",speed:1,ch:2,base:36,label:"jp",look:2.0,metOn:0,offset:0},store.get("settings",{}));
+const S=Object.assign({view:"both",mode:"wait",speed:1,ch:2,base:36,label:"jp",look:2.0,metOn:0,demoOut:"pc",offset:0},store.get("settings",{}));
 if(![0.75,1,1.15,1.3].includes(S.speed))S.speed=1;
 const saveS=()=>store.set("settings",S);
 
@@ -301,7 +314,7 @@ function bindSeg(id,key,cb){
 }
 bindSeg("segMode","mode",renderMenu);
 bindSeg("segSpeed","speed",renderMenu);bindSeg("segView","view",renderMenu);
-bindSeg("segCh","ch");bindSeg("segLabel","label");bindSeg("segScroll","look");bindSeg("segMet","metOn",paintMet);
+bindSeg("segCh","ch");bindSeg("segLabel","label");bindSeg("segScroll","look");bindSeg("segMet","metOn",paintMet);bindSeg("segDemo","demoOut");
 $("offR").value=S.offset;$("offTxt").textContent=S.offset+" ms";
 $("offR").oninput=e=>{S.offset=+e.target.value;$("offTxt").textContent=S.offset+" ms";saveS()};
 
@@ -319,7 +332,7 @@ function renderMenu(){
     let st="";for(let i=0;i<3;i++)st+=i<b.stars?"<b>★</b>":"★";
     c.innerHTML=`<div class="lv">${s.custom?"MY SONG":"LEVEL "+s.lv}</div><h3></h3>
       <div class="meta">BPM ${s.bpm}${b.score?` ・ BEST <span class="num">${b.score}</span>`:""}</div>
-      <div class="stars">${st}</div>${s.custom?'<span class="del">けす</span>':""}`;
+      <div class="stars">${st}</div>${s.custom?'<span class="del">けす</span>':""}<span class="listen">♪ きく</span>`;
     c.querySelector("h3").textContent=s.title;
     c.onclick=e=>{
       if(e.target.classList.contains("del")){
@@ -327,6 +340,7 @@ function renderMenu(){
         else{e.target.dataset.sure=1;e.target.textContent="ほんとに けす？";}
         return;
       }
+      if(e.target.classList.contains("listen")){startSong(s,true);return}
       startSong(s);
     };
     g.appendChild(c);
@@ -348,12 +362,32 @@ function click(at,accent){
   }catch(e){}
 }
 
+/* ================= DEMO SOUND ================= */
+function demoSound(n){
+  const midi=S.base+n.idx,dur=Math.max(0.12,n.d*0.85);
+  if(S.demoOut==="el"&&midiAcc&&midiAcc.outputs&&midiAcc.outputs.size){
+    midiAcc.outputs.forEach(o=>{try{o.send([0x92,midi,100]);setTimeout(()=>{try{o.send([0x82,midi,0])}catch(e){}},dur*1000)}catch(e){}});
+    return;
+  }
+  if(!actx)return;
+  try{
+    const t=actx.currentTime,f=440*Math.pow(2,(midi-69)/12);
+    const o1=actx.createOscillator(),o2=actx.createOscillator(),lp=actx.createBiquadFilter(),g=actx.createGain();
+    o1.type="sawtooth";o1.frequency.value=f;o2.type="triangle";o2.frequency.value=f*2;
+    lp.type="lowpass";lp.frequency.value=1100;lp.Q.value=0.8;
+    g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(0.32,t+0.012);
+    g.gain.setValueAtTime(0.32,t+dur*0.7);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
+    o1.connect(lp);o2.connect(lp);lp.connect(g).connect(actx.destination);
+    o1.start(t);o2.start(t);o1.stop(t+dur+0.05);o2.stop(t+dur+0.05);
+  }catch(e){}
+}
+
 /* ================= MIDI ================= */
-let calibrating=false;const monLines=[];
+let calibrating=false,midiAcc=null;const monLines=[];
 function setChip(cls,txt){$("midiChip").className="chip "+cls;$("midiTxt").textContent=txt}
 function initMIDI(){
   if(!navigator.requestMIDIAccess){setChip("warn","MIDIなし（ペダルの絵をタップでもあそべます）");return}
-  navigator.requestMIDIAccess({sysex:false}).then(acc=>{
+  navigator.requestMIDIAccess({sysex:false}).then(acc=>{midiAcc=acc;
     const bind=()=>{
       const names=[];
       acc.inputs.forEach(inp=>{inp.onmidimessage=onMidi;names.push(inp.name)});
@@ -427,17 +461,19 @@ function layout(){
 }
 window.addEventListener("resize",()=>{if($("play").classList.contains("on"))layout()});
 
-function startSong(song){
+function startSong(song,demo){
   let parsed;try{parsed=parseSong(song.src)}catch(e){return}
   ensureAudio();
   const spb=60/(song.bpm*S.speed);setWin(spb);
   const notes=parsed.notes.map(n=>({idx:n.idx,t:n.beat*spb,d:n.dur*spb,res:null,b:n.beat,db:n.dur,s:n.s,acc:n.acc}));
   G={song,notes,rests:parsed.rests,beats:parsed.beats,spb,lead:4,time:-4*spb,last:performance.now(),endT:parsed.beats*spb+1.2,
      next:0,score:0,combo:0,max:0,cnt:{PERFECT:0,GREAT:0,GOOD:0,OK:0,MISS:0},wrong:0,
-     paused:false,frozenAt:null,nextBeat:-4,ended:false,shownScore:0,hue:0};
+     paused:false,frozenAt:null,nextBeat:-4,ended:false,shownScore:0,hue:0,demo:!!demo,demoOff:new Array(N_PEDALS).fill(-1)};
   pressed.fill(false);parts=[];rings=[];laneFlash.fill(0);wrongFlash.fill(0);
   $("menu").classList.remove("on");$("play").classList.add("on");
-  ["ovPause","ovResult"].forEach(i=>$(i).classList.remove("on"));
+  ["ovPause","ovResult","ovDemo"].forEach(i=>$(i).classList.remove("on"));
+  $("demoTag").style.display=G.demo?"block":"none";
+  document.querySelector(".hud .r").style.visibility=G.demo?"hidden":"visible";
   layout();setCombo();$("score").textContent="0";
   requestAnimationFrame(loop);
 }
@@ -450,7 +486,7 @@ function evtSongTime(ts){
 }
 function press(idx,ts){
   pressed[idx]=true;laneFlash[idx]=1;
-  if(!G||G.paused||G.ended)return;
+  if(!G||G.paused||G.ended||G.demo)return;
   if(S.mode==="wait"){
     const n=G.notes[G.next];if(!n)return;
     if(n.idx===idx&&G.time>=n.t-WIN.o){
@@ -504,7 +540,7 @@ function loop(now){
   const dt=Math.min(0.05,(now-G.last)/1000);G.last=now;
   if(!G.paused&&!G.ended){
     let nt=G.time+dt;
-    if(S.mode==="wait"){
+    if(S.mode==="wait"&&!G.demo){
       const n=G.notes[G.next];
       if(n&&nt>=n.t){nt=n.t;if(G.frozenAt==null)G.frozenAt=performance.now()}
     }
@@ -520,8 +556,18 @@ function loop(now){
         G.nextBeat++;
       }
     }
+    // demo: play each note when it reaches the line
+    if(G.demo){
+      while(G.next<G.notes.length&&G.notes[G.next].t<=G.time){
+        const n=G.notes[G.next];n.res="DEMO";demoSound(n);
+        pressed[n.idx]=true;laneFlash[n.idx]=1;G.demoOff[n.idx]=n.t+n.d*0.85;
+        const L=lanes[n.idx];rings.push({x:L.cx,y:judgeY,r:8,life:1,col:"#3ee6ff"});
+        G.next++;
+      }
+      for(let i=0;i<N_PEDALS;i++)if(G.demoOff[i]>=0&&G.time>=G.demoOff[i]){pressed[i]=false;G.demoOff[i]=-1}
+    }
     // misses
-    if(S.mode==="rhythm"){
+    if(S.mode==="rhythm"&&!G.demo){
       for(let k=G.next;k<G.notes.length;k++){
         const n=G.notes[k];if(n.t>G.time-WIN.o-S.offset/1000)break;
         if(!n.res)miss(n);
@@ -531,7 +577,7 @@ function loop(now){
     if(G.next>=G.notes.length&&G.time>G.notes[G.notes.length-1].t+1.0)finish();
   }
   draw(dt);
-  $("waitmsg").style.opacity=(S.mode==="wait"&&G.frozenAt!=null&&performance.now()-G.frozenAt>600)?1:0;
+  $("waitmsg").style.opacity=(S.mode==="wait"&&!G.demo&&G.frozenAt!=null&&performance.now()-G.frozenAt>600)?1:0;
   requestAnimationFrame(loop);
 }
 
@@ -680,7 +726,7 @@ function drawScore(){
       for(const pc of splitDur(r.beat,r.dur)){if(pc.b<ls||pc.b>=ls+LB)continue;drawRest(mapX(pc.b),y0,pc.d)}}
     // notes
     for(const n of G.notes){if(n.b+n.db<=ls||n.b>=ls+LB)continue;
-      const col=n.res?(n.res==="MISS"?"#e2384f":({PERFECT:"#0aa6c9",GREAT:"#6d55e8",GOOD:"#16a866",OK:"#c99a10"})[n.res])
+      const col=n.res?(n.res==="MISS"?"#e2384f":({PERFECT:"#0aa6c9",GREAT:"#6d55e8",GOOD:"#16a866",OK:"#c99a10",DEMO:"#0aa6c9"})[n.res])
         :(S.mode==="wait"&&n===nextN&&cb>=n.b-0.5?"#e0a400":"#1b2238");
       const pcs=splitDur(n.b,n.db);let prev=null;
       pcs.forEach((pc,i)=>{
@@ -810,14 +856,18 @@ function paintMet(){const on=S.metOn===1;$("btnMet").classList.toggle("on",on);$
   [...$("segMet").children].forEach(b=>b.classList.toggle("on",String(S.metOn)===b.dataset.v))}
 $("btnMet").onclick=()=>{ensureAudio();S.metOn=S.metOn===1?0:1;saveS();paintMet()};
 $("pResume").onclick=togglePause;
-$("pRetry").onclick=()=>startSong(G.song);
+$("pRetry").onclick=()=>startSong(G.song,G.demo);
 $("pQuit").onclick=()=>goMenu();
 $("rRetry").onclick=()=>startSong(G.song);
 $("rBack").onclick=()=>goMenu();
-function goMenu(){G=null;["ovPause","ovResult"].forEach(i=>$(i).classList.remove("on"));$("play").classList.remove("on");$("menu").classList.add("on");renderMenu()}
+$("dPlay").onclick=()=>startSong(G.song);
+$("dAgain").onclick=()=>startSong(G.song,true);
+$("dBack").onclick=()=>goMenu();
+function goMenu(){G=null;pressed.fill(false);["ovPause","ovResult","ovDemo"].forEach(i=>$(i).classList.remove("on"));$("play").classList.remove("on");$("menu").classList.add("on");renderMenu()}
 
 function finish(){
   G.ended=true;
+  if(G.demo){pressed.fill(false);setTimeout(()=>$("ovDemo").classList.add("on"),400);return}
   const n=G.notes.length,acc=G.notes.reduce((a,x)=>a+pts(x.res||"MISS"),0)/(100*n);
   const stars=acc>=0.88?3:acc>=0.7?2:acc>=0.5?1:0;
   const best=store.get("best",{}),k=bestKey(G.song.id),old=best[k]||{stars:0,score:0};
